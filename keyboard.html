@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Keyboard Layout - Hotkey Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .status-bar {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: #aaa;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ade80;
+        }
+
+        .hotkey-list {
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+
+        .hotkey-list strong {
+            color: #fbbf24;
+        }
+
+        .keyboard {
+            background: linear-gradient(145deg, #2d2d2d, #1a1a1a);
+            padding: 20px 25px 25px;
+            border-radius: 12px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+            border: 1px solid #3a3a3a;
+        }
+
+        .row {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .row:last-child {
+            margin-bottom: 0;
+        }
+
+        .key {
+            background: linear-gradient(180deg, #4a4a4a 0%, #3a3a3a 50%, #2a2a2a 100%);
+            color: #e0e0e0;
+            min-width: 44px;
+            height: 44px;
+            margin: 2px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid #555;
+            box-shadow:
+                0 4px 0 #1a1a1a,
+                0 6px 10px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .key:hover {
+            background: linear-gradient(180deg, #5a5a5a 0%, #4a4a4a 50%, #3a3a3a 100%);
+            transform: translateY(1px);
+            box-shadow:
+                0 3px 0 #1a1a1a,
+                0 4px 8px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .key:active {
+            transform: translateY(4px);
+            box-shadow:
+                0 0 0 #1a1a1a,
+                0 1px 3px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .key .top {
+            font-size: 10px;
+            color: #aaa;
+            margin-bottom: 2px;
+        }
+
+        .key .bottom {
+            font-size: 13px;
+        }
+
+        /* Highlighted keys */
+        .key.highlighted {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+            border-color: #fbbf24;
+            color: #1a1a1a;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+            box-shadow:
+                0 4px 0 #92400e,
+                0 6px 15px rgba(245, 158, 11, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .key.highlighted .top {
+            color: #451a03;
+        }
+
+        .key.highlighted:hover {
+            background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+        }
+
+        /* Special key widths */
+        .key-backspace {
+            min-width: 96px;
+        }
+
+        .key-tab {
+            min-width: 70px;
+        }
+
+        .key-backslash {
+            min-width: 70px;
+        }
+
+        .key-caps {
+            min-width: 84px;
+        }
+
+        .key-enter {
+            min-width: 108px;
+        }
+
+        .key-shift-left {
+            min-width: 108px;
+        }
+
+        .key-shift-right {
+            min-width: 134px;
+        }
+
+        .key-ctrl {
+            min-width: 60px;
+        }
+
+        .key-alt {
+            min-width: 50px;
+        }
+
+        .key-win {
+            min-width: 50px;
+        }
+
+        .key-space {
+            min-width: 300px;
+        }
+
+        .key-fn {
+            min-width: 50px;
+        }
+
+        /* Function keys styling */
+        .key-fn-row {
+            font-size: 11px;
+        }
+
+        .key-esc {
+            background: linear-gradient(180deg, #6a4a4a 0%, #5a3a3a 50%, #4a2a2a 100%);
+        }
+
+        .key-esc:hover {
+            background: linear-gradient(180deg, #7a5a5a 0%, #6a4a4a 50%, #5a3a3a 100%);
+        }
+
+        /* Indicator lights */
+        .indicators {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+            gap: 15px;
+            padding-right: 10px;
+        }
+
+        .indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 9px;
+            color: #666;
+        }
+
+        .indicator-light {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #333;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .title {
+            color: #888;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 15px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .legend-color.hotkey {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+            border: 1px solid #fbbf24;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="status-bar">
+        <div class="status-dot"></div>
+        <div class="hotkey-list">
+            Ctrl+Alt keys: <strong id="activeKeys">Loading...</strong>
+        </div>
+    </div>
+
+    <div class="keyboard">
+        <div class="title">US Standard Layout - Ctrl+Alt Hotkeys</div>
+        <div class="indicators">
+            <div class="indicator">
+                <div class="indicator-light"></div>
+                <span>NUM</span>
+            </div>
+            <div class="indicator">
+                <div class="indicator-light"></div>
+                <span>CAPS</span>
+            </div>
+            <div class="indicator">
+                <div class="indicator-light"></div>
+                <span>SCROLL</span>
+            </div>
+        </div>
+
+        <!-- Function Row -->
+        <div class="row">
+            <div class="key key-esc key-fn-row" data-key="Esc">Esc</div>
+            <div style="width: 24px;"></div>
+            <div class="key key-fn-row" data-key="F1">F1</div>
+            <div class="key key-fn-row" data-key="F2">F2</div>
+            <div class="key key-fn-row" data-key="F3">F3</div>
+            <div class="key key-fn-row" data-key="F4">F4</div>
+            <div style="width: 12px;"></div>
+            <div class="key key-fn-row" data-key="F5">F5</div>
+            <div class="key key-fn-row" data-key="F6">F6</div>
+            <div class="key key-fn-row" data-key="F7">F7</div>
+            <div class="key key-fn-row" data-key="F8">F8</div>
+            <div style="width: 12px;"></div>
+            <div class="key key-fn-row" data-key="F9">F9</div>
+            <div class="key key-fn-row" data-key="F10">F10</div>
+            <div class="key key-fn-row" data-key="F11">F11</div>
+            <div class="key key-fn-row" data-key="F12">F12</div>
+        </div>
+
+        <!-- Number Row -->
+        <div class="row" style="margin-top: 10px;">
+            <div class="key" data-key="`"><span class="top">~</span><span class="bottom">`</span></div>
+            <div class="key" data-key="1"><span class="top">!</span><span class="bottom">1</span></div>
+            <div class="key" data-key="2"><span class="top">@</span><span class="bottom">2</span></div>
+            <div class="key" data-key="3"><span class="top">#</span><span class="bottom">3</span></div>
+            <div class="key" data-key="4"><span class="top">$</span><span class="bottom">4</span></div>
+            <div class="key" data-key="5"><span class="top">%</span><span class="bottom">5</span></div>
+            <div class="key" data-key="6"><span class="top">^</span><span class="bottom">6</span></div>
+            <div class="key" data-key="7"><span class="top">&amp;</span><span class="bottom">7</span></div>
+            <div class="key" data-key="8"><span class="top">*</span><span class="bottom">8</span></div>
+            <div class="key" data-key="9"><span class="top">(</span><span class="bottom">9</span></div>
+            <div class="key" data-key="0"><span class="top">)</span><span class="bottom">0</span></div>
+            <div class="key" data-key="-"><span class="top">_</span><span class="bottom">-</span></div>
+            <div class="key" data-key="="><span class="top">+</span><span class="bottom">=</span></div>
+            <div class="key key-backspace" data-key="Backspace">Backspace</div>
+        </div>
+
+        <!-- QWERTY Row -->
+        <div class="row">
+            <div class="key key-tab" data-key="Tab">Tab</div>
+            <div class="key" data-key="Q">Q</div>
+            <div class="key" data-key="W">W</div>
+            <div class="key" data-key="E">E</div>
+            <div class="key" data-key="R">R</div>
+            <div class="key" data-key="T">T</div>
+            <div class="key" data-key="Y">Y</div>
+            <div class="key" data-key="U">U</div>
+            <div class="key" data-key="I">I</div>
+            <div class="key" data-key="O">O</div>
+            <div class="key" data-key="P">P</div>
+            <div class="key" data-key="["><span class="top">{</span><span class="bottom">[</span></div>
+            <div class="key" data-key="]"><span class="top">}</span><span class="bottom">]</span></div>
+            <div class="key key-backslash" data-key="\"><span class="top">|</span><span class="bottom">\</span></div>
+        </div>
+
+        <!-- ASDF Row -->
+        <div class="row">
+            <div class="key key-caps" data-key="CapsLock">Caps Lock</div>
+            <div class="key" data-key="A">A</div>
+            <div class="key" data-key="S">S</div>
+            <div class="key" data-key="D">D</div>
+            <div class="key" data-key="F">F</div>
+            <div class="key" data-key="G">G</div>
+            <div class="key" data-key="H">H</div>
+            <div class="key" data-key="J">J</div>
+            <div class="key" data-key="K">K</div>
+            <div class="key" data-key="L">L</div>
+            <div class="key" data-key=";"><span class="top">:</span><span class="bottom">;</span></div>
+            <div class="key" data-key="'"><span class="top">"</span><span class="bottom">'</span></div>
+            <div class="key key-enter" data-key="Enter">Enter</div>
+        </div>
+
+        <!-- ZXCV Row -->
+        <div class="row">
+            <div class="key key-shift-left" data-key="ShiftLeft">Shift</div>
+            <div class="key" data-key="Z">Z</div>
+            <div class="key" data-key="X">X</div>
+            <div class="key" data-key="C">C</div>
+            <div class="key" data-key="V">V</div>
+            <div class="key" data-key="B">B</div>
+            <div class="key" data-key="N">N</div>
+            <div class="key" data-key="M">M</div>
+            <div class="key" data-key=","><span class="top">&lt;</span><span class="bottom">,</span></div>
+            <div class="key" data-key="."><span class="top">&gt;</span><span class="bottom">.</span></div>
+            <div class="key" data-key="/"><span class="top">?</span><span class="bottom">/</span></div>
+            <div class="key key-shift-right" data-key="ShiftRight">Shift</div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="row">
+            <div class="key key-ctrl" data-key="CtrlLeft">Ctrl</div>
+            <div class="key key-win" data-key="Win">Win</div>
+            <div class="key key-alt" data-key="AltLeft">Alt</div>
+            <div class="key key-space" data-key="Space"></div>
+            <div class="key key-alt" data-key="AltRight">Alt</div>
+            <div class="key key-win" data-key="WinRight">Win</div>
+            <div class="key key-fn" data-key="Fn">Fn</div>
+            <div class="key key-ctrl" data-key="CtrlRight">Ctrl</div>
+        </div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color hotkey"></div>
+            <span>Ctrl+Alt Hotkey</span>
+        </div>
+    </div>
+
+    <!-- Load hotkeys config from simple JS file (works locally!) -->
+    <script src="hotkeys-config.js"></script>
+    <script>
+        // Check if the 'keys' variable was loaded from the config file
+        if (typeof keys !== 'undefined') {
+            // Parse comma-separated keys
+            const keyList = keys.split(',')
+                .map(k => k.trim())
+                .filter(k => k.length > 0);
+
+            applyHighlights(keyList);
+        } else {
+            // Fallback if config file is missing or broken
+            document.getElementById('activeKeys').textContent = 'Error: hotkeys-config.js missing';
+        }
+
+        function applyHighlights(keys) {
+            // Update status bar text
+            const activeKeysEl = document.getElementById('activeKeys');
+            if (activeKeysEl) activeKeysEl.textContent = keys.join(', ');
+
+            // Clear previous highlights
+            document.querySelectorAll('.key.highlighted').forEach(el => el.classList.remove('highlighted'));
+
+            // Apply new highlights
+            keys.forEach(key => {
+                const keyElement = document.querySelector(`.key[data-key="${key}"]`);
+                if (keyElement) {
+                    keyElement.classList.add('highlighted');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

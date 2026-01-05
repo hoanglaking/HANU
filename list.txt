@@ -1,0 +1,21 @@
+==== WINDOW LIST ====
+Title: HANU - Antigravity - captured_windows_list [Administrator]
+Class: Chrome_WidgetWin_1
+Process: Antigravity.exe
+--------------------------------
+Title: Google Gemini - Google Chrome
+Class: Chrome_WidgetWin_1
+Process: chrome.exe
+--------------------------------
+Title: TimerRaimingWindow
+Class: HwndWrapper[CPMClient.exe;;231cdac3-9b7d-442d-95d7-da9a18bcc57b]
+Process: CPMClient.exe
+--------------------------------
+Title: Settings
+Class: ApplicationFrameWindow
+Process: ApplicationFrameHost.exe
+--------------------------------
+Title: User 1 - Anki
+Class: Qt691QWindowIcon
+Process: pythonw.exe
+--------------------------------
