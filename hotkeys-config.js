@@ -1,1 +1,1 @@
-keys = "C, D, K, `, Q, L, T, F, V, W, Y"
+keys = "E, A, S, D, F, V, C, K, Q, L, `"

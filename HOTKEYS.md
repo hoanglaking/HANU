@@ -8,26 +8,32 @@ These hotkeys work across all applications:
 
 | Hotkey | Action | Description |
 |--------|--------|-------------|
-| **Ctrl+Alt+C** | Open Chrome | Launches Google Chrome browser |
-| **Ctrl+Alt+D** | Open My Drive | Opens Google Drive (My Drive) in browser |
-| **Ctrl+Alt+K** | Open Anki | Launches Anki flashcard application |
-| **Ctrl+Alt+`** | Volume Mixer | Opens Windows Volume Mixer (sndvol) |
-| **Ctrl+Alt+Q** | Close Window | Simulates Alt+F4 to close the active window |
-| **Ctrl+Alt+L** | Cleanup | Runs cleanup script (closes Chrome/Zalo, deletes specified profiles) |
+## Global Hotkeys
+
+These hotkeys work across all applications. **Note:** The script automatically closes the Start Menu when you use these shortcuts.
+
+| Hotkey | Action | Description |
+|--------|--------|-------------|
+| **Win+E** | Open My Drive | Opens Google Drive (My Drive) in browser |
+| **Win+C** | Open Chrome | Launches Google Chrome browser |
+| **Win+K** | Open Anki | Launches Anki flashcard application |
+| **Win+`** | Volume Mixer | Opens Windows Volume Mixer (sndvol) |
+| **Win+Q** | Close Window | Simulates Alt+F4 to close the active window |
+| **Win+L** | Cleanup | Runs cleanup script (closes Chrome/Zalo, deletes data) |
 
 ---
 
-## Google Drive Folder Shortcuts
+## Google Drive Folder Shortcuts (A-G Layout)
 
-Quick access to specific Google Drive folders:
+Quick access to specific Drive folders using the left-hand home row:
 
-| Hotkey | Folder ID | Description |
-|--------|-----------|-------------|
-| **Ctrl+Alt+T** | `1yfOkFPtZX2cZIwhcdyQRZikiQEfna__J` | Opens specific Drive folder (Teach) |
-| **Ctrl+Alt+F** | `1Yw1C1PbqIfDBiLgkjo_NCousBuRui72p` | Opens specific Drive folder (Research) |
-| **Ctrl+Alt+V** | `1m4YYqxZPpiG-oV98g5BgZDBvM8G2Ol0l` | Opens specific Drive folder (Test) |
-| **Ctrl+Alt+W** | `1PhhWGdU3qHuNxntlv6TNliUUaVh5Oi7y` | Opens specific Drive folder (Writing) |
-| **Ctrl+Alt+Y** | `1c6Em2kdr-TqCptmq-az3jmxBNGvOdK0D` | Opens specific Drive folder (Philosophy) |
+| Hotkey | Folder | Description |
+|--------|--------|-------------|
+| **Win+A** | Teach | Opens 'Teach' folder |
+| **Win+S** | Research | Opens 'Research' folder |
+| **Win+D** | Test | Opens 'Test' folder |
+| **Win+F** | Philosophy | Opens 'Philosophy' folder (Filosophy) |
+| **Win+V** | Writing | Opens 'Writing' folder (Viết) |
 
 ---
 

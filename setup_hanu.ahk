@@ -229,15 +229,40 @@ if (zaloPath != "") {
 }
 ToolTip() ; Final Clear
 
-; Ctrl+Alt+C: Open Chrome
-^!c::Run("chrome.exe")
+; ==============================================================================
+; 5. Windows Key Logic & Hotkey Remapping
+; ==============================================================================
 
-; Ctrl+Alt+D: Open My Drive
-^!d::Run("https://drive.google.com/drive/my-drive")
+; 1. Block the native LWin press to prevent the Start Menu from intercepting input
+; We must use the hook ($) to prevent self-triggering if we were sending #, but here we just block.
+$LWin::{
+    return 
+}
 
-; Ctrl+Alt+K: Open Anki
-; Tries standard installation paths
-^!k::{
+; 2. Restore Start Menu on Key Release
+; Since the system forces the Start Menu on KeyDown anyway in this environment,
+; we do NOT need to send Ctrl+Esc here (it would just toggle it closed).
+LWin Up::{
+    return 
+}
+
+; Helper function to clean up Start Menu before running command
+RunClean(cmd) {
+    Send("{Esc}")
+    Sleep(50)
+    Run(cmd)
+}
+
+; Win+C: Open Chrome
+LWin & c::RunClean("chrome.exe")
+
+; Win+E: Open My Drive (Replaces Explorer)
+LWin & e::RunClean("https://drive.google.com/drive/my-drive")
+
+; Win+K: Open Anki (Overwrites "Cast")
+LWin & k::{
+    Send("{Esc}")
+    Sleep(50)
     if FileExist(EnvGet("LOCALAPPDATA") . "\Programs\Anki\anki.exe")
         Run(EnvGet("LOCALAPPDATA") . "\Programs\Anki\anki.exe")
     else if FileExist(EnvGet("ProgramFiles") . "\Anki\anki.exe")
@@ -246,18 +271,31 @@ ToolTip() ; Final Clear
         MsgBox("Anki executable not found. Please install it first.")
 }
 
-; Ctrl+Alt+` : Volume Mixer
-^!`::Run("sndvol")
+; Win+` : Volume Mixer
+LWin & `::RunClean("sndvol")
 
-; Drive Folders
-^!t::Run("https://drive.google.com/drive/folders/1yfOkFPtZX2cZIwhcdyQRZikiQEfna__J")
-^!f::Run("https://drive.google.com/drive/folders/1Yw1C1PbqIfDBiLgkjo_NCousBuRui72p?usp=drive_link")
-^!v::Run("https://drive.google.com/drive/folders/1m4YYqxZPpiG-oV98g5BgZDBvM8G2Ol0l?usp=drive_link")
-^!w::Run("https://drive.google.com/drive/folders/1PhhWGdU3qHuNxntlv6TNliUUaVh5Oi7y?usp=drive_link")
-^!y::Run("https://drive.google.com/drive/folders/1c6Em2kdr-TqCptmq-az3jmxBNGvOdK0D?usp=drive_link")
+; Drive Folders - Mapped to easy access keys A-G
+; Teach
+LWin & a::RunClean("https://drive.google.com/drive/folders/1yfOkFPtZX2cZIwhcdyQRZikiQEfna__J")
 
-; Ctrl+Alt+Q: Simulate Alt+F4
-^!q::Send("!{F4}")
+; Research
+LWin & s::RunClean("https://drive.google.com/drive/folders/1Yw1C1PbqIfDBiLgkjo_NCousBuRui72p?usp=drive_link")
+
+; Test (Replaces Desktop)
+LWin & d::RunClean("https://drive.google.com/drive/folders/1m4YYqxZPpiG-oV98g5BgZDBvM8G2Ol0l?usp=drive_link")
+
+; Writing (Viết)
+LWin & v::RunClean("https://drive.google.com/drive/folders/1PhhWGdU3qHuNxntlv6TNliUUaVh5Oi7y?usp=drive_link")
+
+; Philosophy (Filosophy)
+LWin & f::RunClean("https://drive.google.com/drive/folders/1c6Em2kdr-TqCptmq-az3jmxBNGvOdK0D?usp=drive_link")
+
+; Win+Q: Simulate Alt+F4 (Overwrites "Search")
+LWin & q::{
+    Send("{Esc}")
+    Sleep(50)
+    Send("!{F4}")
+}
 
 
 ; ------------------------------------------------------------------------------
@@ -277,9 +315,12 @@ ToolTip() ; Final Clear
 
 
 ; ------------------------------------------------------------------------------
-; Cleanup: Ctrl+Alt+L
+; Cleanup: Win+L (Overwrites "Lock Screen")
 ; ------------------------------------------------------------------------------
-^!l::{
+LWin & l::{
+    Send("{Esc}")
+    Sleep(50)
+    
     result := MsgBox("Start cleanup? This will CLOSE CHROME/ZALO and DELETE profiles for checked emails.", "Cleanup", 1)
     if (result == "Cancel")
         return
