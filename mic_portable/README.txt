@@ -17,5 +17,10 @@ Usage:
 4. Press "Win + H" again to stop.
 
 Troubleshooting:
+- MISSING MODEL: The file "ggml-small.en.bin" (465MB) is not included in the Git repo. 
+  If you are on a fresh computer, you MUST download it from:
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin
+  and place it inside the "mic_portable" folder.
+
 - If nothing happens, make sure your microphone is set as Default in Windows Settings.
 - If it's slow, it might be the "small" model on an older CPU. We can switch to "tiny" if needed.
