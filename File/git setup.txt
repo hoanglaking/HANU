@@ -1,0 +1,4 @@
+Title: Git 2.52.0 Setup
+Class: TWizardForm
+Process: Git-2.52.0-64-bit.tmp
+next (ALT+N) 13 times before install (ALT+I)

@@ -1,0 +1,18 @@
+*note: on first install, there's a special setup dialog noticing this installer is not run with admin rights or something like that, simply hit enter (OK) to continue. the dialog has this detail: 
+Title: Setup
+Class: #32770
+Process: Antigravity.tmp
+
+after done with dialog, here the process we need to focus on: 
+Title: Setup - Antigravity (User)
+Class: TWizardForm
+Process: Antigravity.tmp
+--------------------------------
+
+4 times "next" (ALT+N) before "Install" (ALT+I). after install, first launch will require to select a few settings: 
+
+Title: Antigravity [Administrator]
+Class: Chrome_WidgetWin_1
+Process: Antigravity.exe
+
+simply hit enter > 3 times right arrow then wait for 3 seconds > enter > 1 time down arrow > enter > enter > there's a dialog for signing in with google, stop automating at this screen.
