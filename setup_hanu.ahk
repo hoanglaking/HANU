@@ -74,6 +74,25 @@ LWin & q::{
 }
 
 ; ------------------------------------------------------------------------------
+; Chrome and Explorer Specific: Alt+W to Ctrl+W (Close Tab)
+; ------------------------------------------------------------------------------
+#HotIf WinActive("ahk_exe chrome.exe") or WinActive("ahk_exe explorer.exe")
+!w::Send("^w")
+#HotIf
+
+; ==============================================================================
+; TAB SWITCHING OPTIONS (Uncomment the option you prefer)
+; ==============================================================================
+
+; --- OPTION 2: Alt+Tab -> Tab Switch ONLY in Chrome ---
+#HotIf WinActive("ahk_exe chrome.exe")
+!Tab::Send("^{Tab}")
+!+Tab::Send("^+{Tab}")
+<#Tab::AltTab
+<#+Tab::Send("!+{Tab}")
+#HotIf
+
+; ------------------------------------------------------------------------------
 ; Chrome Specific: Alt+Num to Ctrl+Num (Tab Switching)
 ; ------------------------------------------------------------------------------
 #HotIf WinActive("ahk_exe chrome.exe")
@@ -152,5 +171,22 @@ LWin & q::{
     
     MsgBox("Cleanup finished. Script will now exit.")
     ExitApp()
+}
+
+; ------------------------------------------------------------------------------
+; Force Restart restricted PC: Ctrl+Alt+R
+; ------------------------------------------------------------------------------
+^!r::{
+    result := MsgBox("FORCE RESTART the computer? This bypasses UI restrictions to force reboot.", "Restart", 4)
+    if (result == "No")
+        return
+
+    ; Attempt 1: Native AHK Shutdown (2 = Reboot, 4 = Force. 2+4=6)
+    Shutdown(6)
+    
+    Sleep(2000)
+    
+    ; Attempt 2: Command line fallback if the direct API call is blocked
+    Run("shutdown.exe /r /t 0 /f",, "Hide")
 }
 
