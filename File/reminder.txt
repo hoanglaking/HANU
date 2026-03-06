@@ -1,5 +1,0 @@
-REMINDER FOR NEXT ANTIGRAVITY SESSION
-======================================
-- Integrate downloading .NET Framework 4.8 RUNTIME (not 4.8.1 — not supported on Win 10 v1809)
-- Download link: https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48
-- Runtime only — for running apps, not development.
