@@ -7,6 +7,42 @@
 SetTitleMatchMode(2) 
 
 ; ==============================================================================
+; INITIAL STARTUP CHECKS
+; ==============================================================================
+
+; Check if .NET Framework 4.8 is installed (Release value 528040 for .NET 4.8)
+; DeepFreeze/Fresh PCs will lack this, so we silently install it in the background.
+try {
+    netRelease := RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full", "Release")
+} catch {
+    netRelease := 0
+}
+
+if (netRelease < 528040) {
+    dotnetScript := "
+    (
+    Write-Host 'Checking .NET Framework...'
+    $url = 'https://download.visualstudio.microsoft.com/download/pr/7afca223-55d2-470a-8edc-6a1739ae3252/b09e17b8f04719fa99df9b307ec3c306/ndp48-x86-x64-allos-enu.exe'
+    $installer = Join-Path $env:TEMP 'ndp48-offline.exe'
+    
+    if (-not (Test-Path $installer)) {
+        Write-Host 'Downloading .NET Framework 4.8 Offline Installer...'
+        Start-Process -FilePath 'bitsadmin.exe' -ArgumentList "/transfer ""Net48Download"" /priority foreground ""$url"" ""$installer""" -Wait -WindowStyle Hidden
+    }
+    
+    Start-Process -FilePath $installer -ArgumentList '/quiet /norestart' -Wait
+    )"
+
+    dotnetPsPath := A_Temp . "\install_dotnet48_startup.ps1"
+    if FileExist(dotnetPsPath)
+        FileDelete(dotnetPsPath)
+    FileAppend(dotnetScript, dotnetPsPath)
+    
+    ; Run installation hidden and completely in the background without blocking the rest of the AHK script
+    Run("powershell.exe -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File `"" . dotnetPsPath . "`"",, "Hide")
+}
+
+; ==============================================================================
 ; Windows Key Logic & Hotkey Remapping
 ; ==============================================================================
 
