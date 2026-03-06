@@ -1,0 +1,6 @@
+REMINDER FOR NEXT ANTIGRAVITY SESSION
+======================================
+- Integrate downloading the latest .NET Framework RUNTIME (not Developer Pack)
+  into setup_hanu.ahk / the HANU script.
+- Download link: https://dotnet.microsoft.com/en-us/download/dotnet-framework
+- Runtime only — for running apps, not development.
