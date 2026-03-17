@@ -10,36 +10,107 @@ SetTitleMatchMode(2)
 ; INITIAL STARTUP CHECKS
 ; ==============================================================================
 
-; Check if .NET Framework 4.8 is installed (Release value 528040 for .NET 4.8)
-; DeepFreeze/Fresh PCs will lack this, so we silently install it in the background.
-try {
-    netRelease := RegRead("HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full", "Release")
-} catch {
-    netRelease := 0
+; ==============================================================================
+; 1. Auto-dismiss .NET Framework dialog (background timer)
+; ==============================================================================
+SetTimer(CloseDotNetDialog, 2000)
+
+CloseDotNetDialog() {
+    if WinExist(".NET Framework", , "setup_hanu") { ; Exclude this script's own dialogs just in case
+        WinClose(".NET Framework")
+    }
 }
 
-if (netRelease < 528040) {
-    dotnetScript := "
-    (
-    Write-Host 'Checking .NET Framework...'
-    $url = 'https://download.visualstudio.microsoft.com/download/pr/7afca223-55d2-470a-8edc-6a1739ae3252/b09e17b8f04719fa99df9b307ec3c306/ndp48-x86-x64-allos-enu.exe'
-    $installer = Join-Path $env:TEMP 'ndp48-offline.exe'
-    
-    if (-not (Test-Path $installer)) {
-        Write-Host 'Downloading .NET Framework 4.8 Offline Installer...'
-        Start-Process -FilePath 'bitsadmin.exe' -ArgumentList "/transfer ""Net48Download"" /priority foreground ""$url"" ""$installer""" -Wait -WindowStyle Hidden
-    }
-    
-    Start-Process -FilePath $installer -ArgumentList '/quiet /norestart' -Wait
-    )"
+; ==============================================================================
+; 2. Auto-install Git via winget
+; ==============================================================================
+gitExePath := "C:\Program Files\Git\cmd\git.exe"
 
-    dotnetPsPath := A_Temp . "\install_dotnet48_startup.ps1"
-    if FileExist(dotnetPsPath)
-        FileDelete(dotnetPsPath)
-    FileAppend(dotnetScript, dotnetPsPath)
+if !FileExist(gitExePath) {
+    gitPsScript := "
+    (
+    Write-Host 'Fetching latest Git installer URL from GitHub...'
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/git-for-windows/git/releases/latest"
+    $asset = $release.assets | Where-Object { $_.name -match "64-bit\.exe`$" -and $_.name -notmatch "Portable" -and $_.name -notmatch "MinGit" -and $_.name -notmatch "pdbs" }
+    $downloadUrl = $asset[0].browser_download_url
     
-    ; Run installation hidden and completely in the background without blocking the rest of the AHK script
-    Run("powershell.exe -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File `"" . dotnetPsPath . "`"",, "Hide")
+    $installer = Join-Path $env:TEMP 'git_installer.exe'
+    Write-Host "Downloading Git from: $downloadUrl"
+    
+    Start-Process -FilePath 'bitsadmin.exe' -ArgumentList "/transfer ""GitDownload"" /priority foreground ""$downloadUrl"" ""$installer""" -Wait
+    
+    Write-Host 'Installing Git silently...'
+    Start-Process -FilePath $installer -ArgumentList '/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS' -Wait
+    
+    Write-Host 'Configuring Git...'
+    $gitCmd = 'C:\Program Files\Git\cmd\git.exe'
+    if (Test-Path $gitCmd) {
+        & $gitCmd config --global user.name 'Hoang'
+        & $gitCmd config --global user.email 'Hoang'
+    }
+    )"
+    
+    gitPsPath := A_Temp . "\install_git_startup.ps1"
+    if FileExist(gitPsPath)
+        FileDelete(gitPsPath)
+    FileAppend(gitPsScript, gitPsPath)
+    
+    ; Run Git installation visibly so the user can see the progress
+    RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . gitPsPath . "`"")
+}
+
+; ==============================================================================
+; 3. Auto-install Antigravity (wizard automation)
+; ==============================================================================
+antigravityExe := EnvGet("USERPROFILE") . "\AppData\Local\Programs\antigravity\Antigravity.exe"
+antigravityInstaller := A_ScriptDir . "\File\Antigravity Setup.exe"
+
+if !FileExist(antigravityExe) && FileExist(antigravityInstaller) {
+    ; Launch installer
+    Run(antigravityInstaller)
+    
+    ; Wait for Not Admin dialog (Antigravity Setup)
+    if WinWait("Antigravity Setup", "Installation Options", 15) {
+        WinActivate("Antigravity Setup")
+        Sleep(500)
+        Send("{Enter}") ; Dismiss not admin dialog
+        
+        ; Wait for actual Setup wizard
+        if WinWait("Antigravity Setup ", "Welcome to Antigravity Setup", 5) {
+            WinActivate("Antigravity Setup ")
+            Sleep(500)
+            ; Press Alt+N 4 times (Next)
+            Loop 4 {
+                Send("!n")
+                Sleep(500)
+            }
+            ; Press Alt+I (Install)
+            Send("!i")
+            
+            ; Wait for finish screen
+            if WinWait("Antigravity Setup ", "Completing Antigravity Setup", 60) {
+                WinActivate("Antigravity Setup ")
+                Sleep(500)
+                Send("{Enter}") ; Finish and Launch
+                
+                ; Automate first-launch settings
+                if WinWait("Antigravity", , 15) {
+                    Sleep(2000) ; wait for UI load
+                    WinActivate("Antigravity")
+                    
+                    Send("{Enter}")
+                    Sleep(500)
+                    Send("{Right 3}")
+                    Sleep(3000) ; wait 3s
+                    Send("{Enter}")
+                    Sleep(500)
+                    Send("{Down}")
+                    Sleep(500)
+                    Send("{Enter 2}") ; Enter -> Enter
+                }
+            }
+        }
+    }
 }
 
 ; ==============================================================================
