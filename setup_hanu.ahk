@@ -10,10 +10,27 @@ SetTitleMatchMode(2)
 ; INITIAL STARTUP CHECKS
 ; ==============================================================================
 
+; ==============================================================================
+; 1. Auto-download HANU Materials from Google Drive (background)
+; ==============================================================================
+hanuMaterialsDir := EnvGet("USERPROFILE") . "\Downloads\HANU Materials"
+rcloneExe := A_ScriptDir . "\File\rclone.exe"
+saKeyFile := A_ScriptDir . "\File\antigravity-automation-490511-f95a2bf777f6.json"
 
+if !DirExist(hanuMaterialsDir) && FileExist(rcloneExe) && FileExist(saKeyFile) {
+    ; Write temporary rclone config
+    rcloneConf := A_Temp . "\rclone_hanu.conf"
+    confContent := "[gdrive]`ntype = drive`nservice_account_file = " . saKeyFile . "`nroot_folder_id = 1hY92O6Zsjyfe5O1S3WYKlZcAI-3uTVIC"
+    if FileExist(rcloneConf)
+        FileDelete(rcloneConf)
+    FileAppend(confContent, rcloneConf)
+    
+    ; Run rclone sync in background (non-blocking)
+    Run(rcloneExe . " copy gdrive: `"" . hanuMaterialsDir . "`" --config `"" . rcloneConf . "`"",, "Hide")
+}
 
 ; ==============================================================================
-; 2. Auto-install Git via winget
+; 2. Auto-install Git
 ; ==============================================================================
 gitExePath := "C:\Program Files\Git\cmd\git.exe"
 

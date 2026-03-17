@@ -1,3 +1,8 @@
 
 mic_portable/ggml-small.en.bin
 *.bin
+
+# Service account key (sensitive)
+File/antigravity-automation-490511-f95a2bf777f6.json
+File/rclone.exe
+File/rclone.conf
