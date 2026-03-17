@@ -99,8 +99,21 @@ LWin & c::RunClean("chrome.exe")
 ; Win+E: Open Downloads folder (local)
 LWin & e::RunClean(EnvGet("USERPROFILE") . "\Downloads")
 
-; Win+` : Volume Mixer
-LWin & `::RunClean("sndvol")
+; Win+` : Toggle master volume between 2 and 9
+LWin & `::{
+    try {
+        currentVol := SoundGetVolume()
+        if (currentVol > 5) {
+            SoundSetVolume(2)
+            ToolTip("Volume: 2%")
+        } else {
+            SoundSetVolume(9)
+            ToolTip("Volume: 9%")
+        }
+        ; Hide the tooltip after 1.5 seconds
+        SetTimer () => ToolTip(), -1500
+    }
+}
 
 ; Win+Q: Simulate Alt+F4 (Close Window)
 LWin & q::{

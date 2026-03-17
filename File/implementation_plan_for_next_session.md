@@ -37,6 +37,11 @@ Add three startup features to `setup_hanu.ahk` so that launching `setup_hanu.exe
 - Remove the existing `.NET 4.8 download + install` logic (lines 13–42) since it doesn't work on DeepFreeze PCs
 - Replace with just the timer-based dialog dismissal
 
+#### 5. Change Win+\` shortcut to toggle volume
+- Instead of opening the volume mixer (`sndvol`), modify the `LWin & \`` hotkey to toggle the master volume.
+- Use `SoundGetVolume()` and `SoundSetVolume()` to switch between volume levels 2 and 9.
+- Display a brief ToolTip overlay ("Volume: 2%" or "Volume: 9%") for 1.5 seconds so the user has a visual announcement of the changed value.
+
 ## Verification Plan
 
 ### Manual Verification
@@ -46,3 +51,4 @@ Add three startup features to `setup_hanu.ahk` so that launching `setup_hanu.exe
 4. Verify: Git installs silently and `git --version` works
 5. Verify: Antigravity wizard is automated through to the Google sign-in screen
 6. Verify: Any ".NET Framework" popup is auto-closed within 2 seconds
+7. Verify: Pressing `Win+\`` toggles the system volume between 2 and 9.
