@@ -10,26 +10,7 @@ SetTitleMatchMode(2)
 ; INITIAL STARTUP CHECKS
 ; ==============================================================================
 
-; ==============================================================================
-; 1. Auto-dismiss .NET Framework dialog (background timer)
-; ==============================================================================
-SetTimer(CloseDotNetDialog, 2000)
 
-CloseDotNetDialog() {
-    if WinExist(".NET Framework", , "setup_hanu") { ; Exclude this script's own dialogs just in case
-        try {
-            WinActivate(".NET Framework")
-            Sleep(100)
-            Send("{Esc}") ; Esc usually maps to Cancel / No / Skip
-            Sleep(100)
-            Send("!n")    ; Alt+N for "No" just in case
-            Sleep(100)
-            ControlClick("Button2", ".NET Framework") ; Button2 is often the No/Cancel button
-            Sleep(100)
-            WinClose(".NET Framework")
-        }
-    }
-}
 
 ; ==============================================================================
 ; 2. Auto-install Git via winget
@@ -210,17 +191,7 @@ LWin & q::{
 !w::Send("^w")
 #HotIf
 
-; ==============================================================================
-; TAB SWITCHING OPTIONS (Uncomment the option you prefer)
-; ==============================================================================
 
-; --- OPTION 2: Alt+Tab -> Tab Switch ONLY in Chrome ---
-#HotIf WinActive("ahk_exe chrome.exe")
-!Tab::Send("^{Tab}")
-!+Tab::Send("^+{Tab}")
-<#Tab::AltTab
-<#+Tab::Send("!+{Tab}")
-#HotIf
 
 ; ------------------------------------------------------------------------------
 ; Chrome Specific: Alt+Num to Ctrl+Num (Tab Switching)
@@ -237,71 +208,7 @@ LWin & q::{
 !9::Send("^9")
 #HotIf
 
-; ------------------------------------------------------------------------------
-; Cleanup: Ctrl+Alt+L
-; ------------------------------------------------------------------------------
-^!l::{
-    result := MsgBox("Start cleanup? This will CLOSE CHROME and DELETE profiles for checked emails.", "Cleanup", 1)
-    if (result == "Cancel")
-        return
 
-    cleanupScript := "
-    (
-    $emailsToRemove = @('hoang26hoang@gmail.com', 'hoang26gamer@gmail.com', 'hoanglaking@gmail.com')
-    
-    Write-Host 'Closing apps...'
-    Stop-Process -Name chrome -Force -ErrorAction SilentlyContinue
-    Stop-Process -Name zalo -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
-
-    # Chrome User Data Path
-    $userDataPath = Join-Path $env:LOCALAPPDATA 'Google\Chrome\User Data'
-    $localStatePath = Join-Path $userDataPath 'Local State'
-
-    if (Test-Path $localStatePath) {
-        try {
-            $content = Get-Content $localStatePath -Raw -Encoding UTF8
-            $json = $content | ConvertFrom-Json
-            $profiles = $json.profile.info_cache
-            
-            foreach ($folderName in $profiles.PSObject.Properties.Name) {
-                $profileData = $profiles.$folderName
-                $email = $profileData.user_name
-                
-                if ($email -in $emailsToRemove) {
-                    $dirToRemove = Join-Path $userDataPath $folderName
-                    Write-Host "Found profile '$email' at '$dirToRemove'. Deleting..."
-                    if (Test-Path $dirToRemove) {
-                        Remove-Item -LiteralPath $dirToRemove -Recurse -Force -ErrorAction SilentlyContinue
-                    }
-                }
-            }
-        } catch {
-            Write-Error "Error parsing Chrome profiles: $_"
-        }
-    }
-
-    Write-Host 'Emptying Recycle Bin...'
-    Clear-RecycleBin -Force -ErrorAction SilentlyContinue
-
-    Write-Host 'Cleanup Complete. You can close this window.'
-    Start-Sleep -Seconds 3
-    )"
-    
-    ; Write to temp file
-    cleanupPsPath := A_Temp . "\chrome_cleanup.ps1"
-    if FileExist(cleanupPsPath)
-        FileDelete(cleanupPsPath)
-    FileAppend(cleanupScript, cleanupPsPath)
-
-    RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . cleanupPsPath . "`"")
-    
-    if FileExist(cleanupPsPath)
-        FileDelete(cleanupPsPath)
-    
-    MsgBox("Cleanup finished. Script will now exit.")
-    ExitApp()
-}
 
 ; ------------------------------------------------------------------------------
 ; Force Restart restricted PC: Ctrl+Alt+R

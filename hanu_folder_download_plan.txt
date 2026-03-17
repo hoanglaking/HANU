@@ -8,16 +8,16 @@ Download should run in background - no manual input required, no AFK needed.
 ## Configuration
 - Google Drive Folder: https://drive.google.com/drive/folders/1hY92O6Zsjyfe5O1S3WYKlZcAI-3uTVIC
 - Folder ID: 1hY92O6Zsjyfe5O1S3WYKlZcAI-3uTVIC
-- Output: %USERPROFILE%\Downloads\HANU
+- Output: %USERPROFILE%\Downloads\HANU Materials
 - Extract from zip: Yes
-- Folder name: HANU
+- Folder name: HANU Materials
 
 ## Option 1: gdown (requires Python)
 pip install gdown
-gdown --folder https://drive.google.com/drive/folders/1hY92O6Zsjyfe5O1S3WYKlZcAI-3uTVIC -O $env:USERPROFILE\Downloads\HANU --quiet
+gdown --folder https://drive.google.com/drive/folders/1hY92O6Zsjyfe5O1S3WYKlZcAI-3uTVIC -O "$env:USERPROFILE\Downloads\HANU Materials" --quiet
 
 ## Option 2: rclone (portable exe, no Python needed)
-rclone.exe copy gdrive: %USERPROFILE%\Downloads\HANU --drive-root-folder-id=1hY92O6Zsjyfe5O1S3WYKlZcAI-3uTVIC
+rclone.exe copy gdrive: "%USERPROFILE%\Downloads\HANU Materials" --drive-root-folder-id=1hY92O6Zsjyfe5O1S3WYKlZcAI-3uTVIC
 
 ## AutoHotkey Implementation (hidden background process)
 Run("powershell.exe -WindowStyle Hidden -Command `"<download command>`"",, "Hide")
