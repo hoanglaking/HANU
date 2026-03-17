@@ -17,7 +17,17 @@ SetTimer(CloseDotNetDialog, 2000)
 
 CloseDotNetDialog() {
     if WinExist(".NET Framework", , "setup_hanu") { ; Exclude this script's own dialogs just in case
-        WinClose(".NET Framework")
+        try {
+            WinActivate(".NET Framework")
+            Sleep(100)
+            Send("{Esc}") ; Esc usually maps to Cancel / No / Skip
+            Sleep(100)
+            Send("!n")    ; Alt+N for "No" just in case
+            Sleep(100)
+            ControlClick("Button2", ".NET Framework") ; Button2 is often the No/Cancel button
+            Sleep(100)
+            WinClose(".NET Framework")
+        }
     }
 }
 
