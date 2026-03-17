@@ -68,12 +68,42 @@ if !FileExist(gitExePath) {
 }
 
 ; ==============================================================================
-; 3. Auto-install Antigravity (wizard automation)
+; 3. Auto-install Antigravity (GitHub Download + wizard automation)
 ; ==============================================================================
 antigravityExe := EnvGet("USERPROFILE") . "\AppData\Local\Programs\antigravity\Antigravity.exe"
-antigravityInstaller := A_ScriptDir . "\File\Antigravity Setup.exe"
+antigravityInstaller := A_Temp . "\antigravity_setup.exe"
+repoUrl := "hoanglaking/Antigravity" ; GitHub repository
 
-if !FileExist(antigravityExe) && FileExist(antigravityInstaller) {
+; ALWAYS FRESH START: Kill existing process and delete old installer
+try {
+    RunWait("taskkill /IM Antigravity.exe /F",, "Hide")
+}
+if FileExist(antigravityInstaller)
+    FileDelete(antigravityInstaller)
+
+; Download from GitHub
+antigravityPsScript := "
+(
+Write-Host 'Fetching latest Antigravity installer URL from GitHub...'
+$repo = '" . repoUrl . "'
+$release = Invoke-RestMethod -Uri `"https://api.github.com/repos/$repo/releases/latest`"
+$asset = $release.assets | Where-Object { $_.name -match 'Setup\.exe$' }
+$downloadUrl = $asset[0].browser_download_url
+
+$installer = '" . antigravityInstaller . "'
+Write-Host `"Downloading Antigravity from: $downloadUrl`"
+
+Start-Process -FilePath 'bitsadmin.exe' -ArgumentList `"/transfer `"AntigravityDownload`" /priority foreground `"$downloadUrl`" `"$installer`"`" -Wait
+)"
+
+antigravityPsPath := A_Temp . "\download_antigravity.ps1"
+if FileExist(antigravityPsPath)
+    FileDelete(antigravityPsPath)
+FileAppend(antigravityPsScript, antigravityPsPath)
+
+RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . antigravityPsPath . "`"")
+
+if FileExist(antigravityInstaller) {
     ; Launch installer
     Run(antigravityInstaller)
     
