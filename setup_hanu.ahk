@@ -54,7 +54,7 @@ if FileExist(gitExePath) && !DirExist(hanuRepoDir) {
 ; 3. Auto-download HANU Materials & TESOL from Google Drive
 ; ==============================================================================
 hanuMaterialsDir := EnvGet("USERPROFILE") . "\Downloads\HANU Materials"
-rcloneDir := A_ScriptDir . "\File"
+rcloneDir := hanuRepoDir . "\File"
 rcloneExe := rcloneDir . "\rclone.exe"
 saKeyFile := rcloneDir . "\antigravity-automation-490511-9b00c9bd8cf5.json"
 
@@ -149,11 +149,10 @@ if FileExist(rcloneExe) && FileExist(saKeyFile) && (!DirExist(hanuMaterialsDir) 
 }
 
 ; ==============================================================================
-; 4. Auto-install Antigravity (GitHub Download + wizard automation)
+; 4. Auto-install Antigravity (Direct Download + wizard automation)
 ; ==============================================================================
 antigravityExe := EnvGet("USERPROFILE") . "\AppData\Local\Programs\antigravity\Antigravity.exe"
 antigravityInstaller := A_Temp . "\antigravity_setup.exe"
-repoUrl := "hoanglaking/Antigravity"
 
 ; ALWAYS FRESH START: Kill existing process and delete old installer
 try {
@@ -162,14 +161,13 @@ try {
 if FileExist(antigravityInstaller)
     FileDelete(antigravityInstaller)
 
-; Download from GitHub (fixed: using line-by-line concatenation instead of continuation section)
-agPsScript := "Write-Host 'Fetching latest Antigravity installer URL from GitHub...'`n"
-agPsScript .= "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/" . repoUrl . "/releases/latest'`n"
-agPsScript .= "$asset = $release.assets | Where-Object { $_.name -match 'Setup\.exe$' }`n"
-agPsScript .= "$downloadUrl = $asset[0].browser_download_url`n"
+; Download Antigravity directly from stable URL
+agPsScript := "Write-Host 'Downloading Antigravity...'`n"
+agPsScript .= "$downloadUrl = 'https://edgedl.me.gvt1.com/edgedl/release2/j0qc3/antigravity/stable/1.20.6-5891862175809536/windows-x64/Antigravity.exe'`n"
 agPsScript .= "$installer = '" . antigravityInstaller . "'`n"
-agPsScript .= "Write-Host `"Downloading Antigravity from: $downloadUrl`"`n"
+agPsScript .= "Write-Host `"Downloading from: $downloadUrl`"`n"
 agPsScript .= "Invoke-WebRequest -Uri $downloadUrl -OutFile $installer -UseBasicParsing`n"
+agPsScript .= "Write-Host 'Download complete!'`n"
 
 antigravityPsPath := A_Temp . "\download_antigravity.ps1"
 if FileExist(antigravityPsPath)
@@ -319,6 +317,7 @@ LWin & q::{
 ; Chrome Specific: Alt+Num to Ctrl+Num (Tab Switching)
 ; ------------------------------------------------------------------------------
 #HotIf WinActive("ahk_exe chrome.exe")
+!t::Send("^t")
 !1::Send("^1")
 !2::Send("^2")
 !3::Send("^3")
