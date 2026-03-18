@@ -14,9 +14,62 @@ SetTitleMatchMode(2)
 ; 1. Auto-download HANU Materials from Google Drive (background)
 ; ==============================================================================
 hanuMaterialsDir := EnvGet("USERPROFILE") . "\Downloads\HANU Materials"
-rcloneExe := A_ScriptDir . "\File\rclone.exe"
-saKeyFile := A_ScriptDir . "\File\antigravity-automation-490511-f95a2bf777f6.json"
+rcloneDir := A_ScriptDir . "\File"
+rcloneExe := rcloneDir . "\rclone.exe"
+saKeyFile := rcloneDir . "\antigravity-automation-490511-9b00c9bd8cf5.json"
+gistUrl := "https://gist.githubusercontent.com/hoanglaking/0353ad65fe8e67908b4094eae1f17897/raw/60675c94bab0f530835bc9d9e4e5dd36ff4cf53f/key.json"
 
+; Ensure File directory exists
+if !DirExist(rcloneDir) {
+    DirCreate(rcloneDir)
+}
+
+; Check if we need to download dependencies
+needsRclone := !FileExist(rcloneExe)
+needsKey := !FileExist(saKeyFile)
+
+if (needsRclone || needsKey) {
+    psScript := "
+    (
+        Write-Host 'Downloading HANU Dependencies...'
+        
+        if (" . (needsKey ? "$true" : "$false") . ") {
+            Write-Host 'Downloading Service Account Key...'
+            Invoke-WebRequest -Uri '" . gistUrl . "' -OutFile '" . saKeyFile . "' -UseBasicParsing
+        }
+        
+        if (" . (needsRclone ? "$true" : "$false") . ") {
+            Write-Host 'Downloading Rclone Explorer...'
+            `$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/rclone/rclone/releases/latest'
+            `$asset = `$release.assets | Where-Object { `$_.name -match 'windows-amd64.zip$' }
+            `$downloadUrl = `$asset[0].browser_download_url
+            
+            `$zipPath = Join-Path `$env:TEMP 'rclone.zip'
+            `$extDir = Join-Path `$env:TEMP 'rclone_ext'
+            
+            Invoke-WebRequest -Uri `$downloadUrl -OutFile `$zipPath -UseBasicParsing
+            
+            if (Test-Path `$extDir) { Remove-Item `$extDir -Recurse -Force }
+            Expand-Archive -Path `$zipPath -DestinationPath `$extDir -Force
+            
+            `$exePath = Get-ChildItem -Path `$extDir -Filter 'rclone.exe' -Recurse | Select-Object -First 1
+            Copy-Item -Path `$exePath.FullName -Destination '" . rcloneExe . "' -Force
+            
+            Remove-Item `$zipPath -Force
+            Remove-Item `$extDir -Recurse -Force
+        }
+    )"
+    
+    psPath := A_Temp . "\download_hanu_deps.ps1"
+    if FileExist(psPath)
+        FileDelete(psPath)
+    FileAppend(psScript, psPath)
+    
+    ; Run the download visually so the user can see progress (just like Git installer)
+    RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . psPath . "`"")
+}
+
+; Proceed with sync if we have everything
 if !DirExist(hanuMaterialsDir) && FileExist(rcloneExe) && FileExist(saKeyFile) {
     ; Write temporary rclone config
     rcloneConf := A_Temp . "\rclone_hanu.conf"
@@ -26,7 +79,7 @@ if !DirExist(hanuMaterialsDir) && FileExist(rcloneExe) && FileExist(saKeyFile) {
     FileAppend(confContent, rcloneConf)
     
     ; Run rclone sync in background (non-blocking)
-    Run(rcloneExe . " copy gdrive: `"" . hanuMaterialsDir . "`" --config `"" . rcloneConf . "`"",, "Hide")
+    RunWait(rcloneExe . " copy gdrive: `"" . hanuMaterialsDir . "`" --config `"" . rcloneConf . "`"",, "Hide")
 }
 
 ; ==============================================================================
@@ -76,7 +129,7 @@ repoUrl := "hoanglaking/Antigravity" ; GitHub repository
 
 ; ALWAYS FRESH START: Kill existing process and delete old installer
 try {
-    RunWait("taskkill /IM Antigravity.exe /F",, "Hide")
+    ; RunWait("taskkill /IM Antigravity.exe /F",, "Hide") ; Commented out to prevent closing Antigravity during testing
 }
 if FileExist(antigravityInstaller)
     FileDelete(antigravityInstaller)
