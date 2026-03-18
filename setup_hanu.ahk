@@ -44,51 +44,69 @@ if (needsRclone || needsKey) {
 
     ; --- Handle Rclone Download ---
     if (needsRclone) {
-        psScript := "
-        (
-            Write-Host 'Downloading HANU Dependencies...'
-            
-            Write-Host 'Downloading Rclone Explorer...'
-            `$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/rclone/rclone/releases/latest'
-            `$asset = `$release.assets | Where-Object { `$_.name -match 'windows-amd64.zip$' }
-            `$downloadUrl = `$asset[0].browser_download_url
-            
-            `$zipPath = Join-Path `$env:TEMP 'rclone.zip'
-            `$extDir = Join-Path `$env:TEMP 'rclone_ext'
-            
-            Invoke-WebRequest -Uri `$downloadUrl -OutFile `$zipPath -UseBasicParsing
-            
-            if (Test-Path `$extDir) { Remove-Item `$extDir -Recurse -Force }
-            Expand-Archive -Path `$zipPath -DestinationPath `$extDir -Force
-            
-            `$exePath = Get-ChildItem -Path `$extDir -Filter 'rclone.exe' -Recurse | Select-Object -First 1
-            Copy-Item -Path `$exePath.FullName -Destination '" . rcloneExe . "' -Force
-            
-            Remove-Item `$zipPath -Force
-            Remove-Item `$extDir -Recurse -Force
-        )"
+        psScript := "Write-Host 'Downloading HANU Dependencies...'`n"
+        psScript .= "Write-Host 'Downloading Rclone Explorer...'`n"
+        psScript .= "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/rclone/rclone/releases/latest'`n"
+        psScript .= "$asset = $release.assets | Where-Object { $_.name -match 'windows-amd64.zip$' }`n"
+        psScript .= "$downloadUrl = $asset[0].browser_download_url`n"
+        psScript .= "$zipPath = Join-Path $env:TEMP 'rclone.zip'`n"
+        psScript .= "$extDir = Join-Path $env:TEMP 'rclone_ext'`n"
+        psScript .= "Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -UseBasicParsing`n"
+        psScript .= "if (Test-Path $extDir) { Remove-Item $extDir -Recurse -Force }`n"
+        psScript .= "Expand-Archive -Path $zipPath -DestinationPath $extDir -Force`n"
+        psScript .= "$exePath = Get-ChildItem -Path $extDir -Filter 'rclone.exe' -Recurse | Select-Object -First 1`n"
+        psScript .= "Copy-Item -Path $exePath.FullName -Destination '" . rcloneExe . "' -Force`n"
+        psScript .= "Remove-Item $zipPath -Force`n"
+        psScript .= "Remove-Item $extDir -Recurse -Force`n"
         
         psPath := A_Temp . "\download_hanu_deps.ps1"
         if FileExist(psPath)
             FileDelete(psPath)
         FileAppend(psScript, psPath)
         
-        ; Run the download visually so the user can see progress (just like Git installer)
+        ; Run the download visually so the user can see progress
         RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . psPath . "`"")
     }
 }
 
 ; Proceed with sync if we have everything
-if !DirExist(hanuMaterialsDir) && FileExist(rcloneExe) && FileExist(saKeyFile) {
-    ; Write temporary rclone config
+tesolDir := EnvGet("USERPROFILE") . "\Downloads\TESOL"
+
+if FileExist(rcloneExe) && FileExist(saKeyFile) && (!DirExist(hanuMaterialsDir) || !DirExist(tesolDir)) {
+    ; Write temporary rclone config for both folders
     rcloneConf := A_Temp . "\rclone_hanu.conf"
-    confContent := "[gdrive]`ntype = drive`nservice_account_file = " . saKeyFile . "`nroot_folder_id = 1hY92O6Zsjyfe5O1S3WYKlZcAI-3uTVIC"
+    confContent := "[gdrive]`ntype = drive`nservice_account_file = " . saKeyFile . "`nroot_folder_id = 1hY92O6Zsjyfe5O1S3WYKlZcAI-3uTVIC`n`n"
+    confContent .= "[gdrive_tesol]`ntype = drive`nservice_account_file = " . saKeyFile . "`nroot_folder_id = 1JLthZ0VAMXFN7KCfEGHOXR6mwPDKCA6H"
+    
     if FileExist(rcloneConf)
         FileDelete(rcloneConf)
     FileAppend(confContent, rcloneConf)
     
-    ; Run rclone sync in background (non-blocking)
-    RunWait(rcloneExe . " copy gdrive: `"" . hanuMaterialsDir . "`" --config `"" . rcloneConf . "`"",, "Hide")
+    ; Run rclone syncs sequentially (download only, never delete from remote Drive)
+    if !DirExist(hanuMaterialsDir)
+        RunWait(rcloneExe . " copy gdrive: `"" . hanuMaterialsDir . "`" --config `"" . rcloneConf . "`"",, "Hide")
+    if !DirExist(tesolDir)
+        RunWait(rcloneExe . " copy gdrive_tesol: `"" . tesolDir . "`" --config `"" . rcloneConf . "`"",, "Hide")
+
+    ; --- Extract and Cleanup ZIP Files locally ---
+    zipScript := "$dirs = @('" . hanuMaterialsDir . "', '" . tesolDir . "')`n"
+    zipScript .= "foreach ($dir in $dirs) {`n"
+    zipScript .= "  if (Test-Path $dir) {`n"
+    zipScript .= "    $zipFiles = Get-ChildItem -Path $dir -Filter '*.zip' -Recurse`n"
+    zipScript .= "    foreach ($zip in $zipFiles) {`n"
+    zipScript .= "      Expand-Archive -Path $zip.FullName -DestinationPath $zip.DirectoryName -Force`n"
+    zipScript .= "      Remove-Item -Path $zip.FullName -Force`n"
+    zipScript .= "    }`n"
+    zipScript .= "  }`n"
+    zipScript .= "}`n"
+    
+    zipPsPath := A_Temp . "\extract_hanu_zips.ps1"
+    if FileExist(zipPsPath)
+        FileDelete(zipPsPath)
+    FileAppend(zipScript, zipPsPath)
+    
+    ; Run the extraction
+    RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . zipPsPath . "`"",, "Hide")
 }
 
 ; ==============================================================================
