@@ -11,13 +11,52 @@ SetTitleMatchMode(2)
 ; ==============================================================================
 
 ; ==============================================================================
-; 1. Auto-download HANU Materials from Google Drive (background)
+; 1. Auto-install Git (must be first — needed for cloning HANU repo)
+; ==============================================================================
+gitExePath := "C:\Program Files\Git\cmd\git.exe"
+
+if !FileExist(gitExePath) {
+    gitPsScript := "Write-Host 'Fetching latest Git installer URL from GitHub...'`n"
+    gitPsScript .= "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/git-for-windows/git/releases/latest'`n"
+    gitPsScript .= "$asset = $release.assets | Where-Object { $_.name -match '64-bit\.exe$' -and $_.name -notmatch 'Portable' -and $_.name -notmatch 'MinGit' -and $_.name -notmatch 'pdbs' }`n"
+    gitPsScript .= "$downloadUrl = $asset[0].browser_download_url`n"
+    gitPsScript .= "$installer = Join-Path $env:TEMP 'git_installer.exe'`n"
+    gitPsScript .= "Write-Host `"Downloading Git from: $downloadUrl`"`n"
+    gitPsScript .= "Start-Process -FilePath 'bitsadmin.exe' -ArgumentList `"/transfer `"`"GitDownload`"`" /priority foreground `"`"$downloadUrl`"`" `"`"$installer`"`"`" -Wait`n"
+    gitPsScript .= "Write-Host 'Installing Git silently...'`n"
+    gitPsScript .= "Start-Process -FilePath $installer -ArgumentList '/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS' -Wait`n"
+    gitPsScript .= "Write-Host 'Configuring Git...'`n"
+    gitPsScript .= "$gitCmd = 'C:\Program Files\Git\cmd\git.exe'`n"
+    gitPsScript .= "if (Test-Path $gitCmd) {`n"
+    gitPsScript .= "  & $gitCmd config --global user.name 'Hoang'`n"
+    gitPsScript .= "  & $gitCmd config --global user.email 'Hoang'`n"
+    gitPsScript .= "}`n"
+    
+    gitPsPath := A_Temp . "\install_git_startup.ps1"
+    if FileExist(gitPsPath)
+        FileDelete(gitPsPath)
+    FileAppend(gitPsScript, gitPsPath)
+    
+    ; Run Git installation visibly so the user can see the progress
+    RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . gitPsPath . "`"")
+}
+
+; ==============================================================================
+; 2. Clone HANU repository into Downloads (if not already there)
+; ==============================================================================
+hanuRepoDir := EnvGet("USERPROFILE") . "\Downloads\HANU"
+
+if FileExist(gitExePath) && !DirExist(hanuRepoDir) {
+    RunWait("`"" . gitExePath . "`" clone https://github.com/hoanglaking/HANU.git `"" . hanuRepoDir . "`"")
+}
+
+; ==============================================================================
+; 3. Auto-download HANU Materials & TESOL from Google Drive
 ; ==============================================================================
 hanuMaterialsDir := EnvGet("USERPROFILE") . "\Downloads\HANU Materials"
 rcloneDir := A_ScriptDir . "\File"
 rcloneExe := rcloneDir . "\rclone.exe"
 saKeyFile := rcloneDir . "\antigravity-automation-490511-9b00c9bd8cf5.json"
-gistUrl := "https://gist.githubusercontent.com/hoanglaking/0353ad65fe8e67908b4094eae1f17897/raw/60675c94bab0f530835bc9d9e4e5dd36ff4cf53f/key.json" ; REMOVED: Using inline base64 instead
 
 ; Ensure File directory exists
 if !DirExist(rcloneDir) {
@@ -31,7 +70,7 @@ needsKey := !FileExist(saKeyFile)
 if (needsRclone || needsKey) {
     ; --- Handle JSON Key (Base64 Decode) ---
     if (needsKey) {
-        b64Key := "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiYW50aWdyYXZpdHktYXV0b21hdGlvbi00OTA1MTEiLAogICJwcml2YXRlX2tleV9pZCI6ICI5MWEwN2Q5OGM1NjBmM2IxNTJhMGNkZmEzNmUxMTkyOTBhNjg2MDBlIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdkFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLWXdnZ1NpQWdFQUFvSUJBUUNXYW5RVlNKVHZlVUMwXG5HUkJSbGtVd0ZNZDVWeU5WT2J5VEF0a3J4UzUrNVVDREd0djVPSWdnTHU5T20vaFJndC80RlJsbzVSNXlzNXdiXG41VUV1TVZ6MkRBZk5tYTZFYWVFaDFKbTRXaGIxME9BdTZEYUFIalkwVDJTSG5OOEptZ05xbEFONyt0QjRCMkM3XG4vYVNUc0daRTJEOGxuWGwwMnNHVXNBcDVQQUpIdDdPZ0RSU0lmaGdURFFTS2VhbUx5bmhnaXZ4Z0RzT2EzOE1yXG5NY3pJTDhVelQ3NVI2NGNEV0w3VVQ0QlRTamdRT2MxM3FTWlJMMzVHMktFYlhNMEx1dlVhTW1HQ0ZaY2pmR2ZMXG41QlBJTU10Qlk3WHpBRnFRRDZaUFlwSmZWaCtMQVVJQjlyanVwTXZmVk1oUjdKU2UzcG5wM1ZiWmdUYVhVaU5aXG4vN2l1YXRHWkFnTUJBQUVDZ2dFQUFLcENESjRtZkdGcE9JWFBJSWNHbGg1NlZxb2pBWDBGdG1MU0JLMmdNK29DXG56eGZ2Y2N4ekVMd2FUVnB6K0E4a29jZTlQT05GWU54ZHRPZ0lCdC9vc2QzSEh1a2dwQ3ZJVTNVVGIzS0xnRUZiXG4wNXZkR0t5T0l0OWRGYk1XSVIvdjYzR0EzM01ZTWJCa0k4TmtWK3FCbndWZWxhUGdTNFgzcVZucHhXYlQxS2VGXG5ydTZtWW5vdldsUTRKakJwaGtqRmF2b3ZISTNSNEVDZ2VpUm1NKzFUTEhpcm1tcUQxUFAwam51cW5veTVxcTRBXG5jWnh6NUJvNk5TSUNtZExhWVhQMFFPV21CS29ESEtkT2FibG9hMExZOU9rN0hDcitxRjdVeTB1L1ZOekZzcHJ1XG52aXJ1d0NiN2F0UkFSWENSTXFjUDVmdGxhQld6dkREVVNEZ2JmTFBBelFLQmdRREZaMWYraG9xWVIxWGZ6MHRyXG5BRE5hblcxQVNrZmhOcTNNS3ZaZENNMnlQNW1HWUo1Yi93MWRBMWExQytXcGVyVTBDU0hOaUxxWWZSdlBkbUtnXG45bHlDY051UjVDRENvaldFQ01DbXRTbnVpZzdyTVgrYTJKSUY1KzBjUWhKWlUyMEt0VW5ROGI1UkFDUXY4ZGkrXG5RWHpNWUsxYTRpMXZEV1l1MkcvcFk0VCtvd0tCZ1FEREVJUEJRbmIweXNlMm85L1NyTTN3SmhSU0JFR1U5VjQ3XG5sSk83R2UrQTJLVlYyd29QMkducWk4ZFBiZk8wNkNkL2EvQWU0blVaN1dSMGV2dVJURUN0bGZkTWVMekFDUSszXG5FYy9SWnlYL0NKb0NKZWg5SXNKcjlpK2Yxbk1qQU9TdEV6NWxoVzhGcXZZczRsZGUrQ0VZWkFlUFFuV1kxYkdnXG53a3BHN3N5ZWt3S0JnQ01abGc3ZTAyUHlReld4Z1VKOFhhVStHci8wdFVVNVdMdlY0OHAxRjBZYmd1dmU0Q21SXG5kMG5UbnlaQUFFMGJVWDc0SkxlTUdVbWw3VHo5V3RvdUZCTHBpRkV2bEJlbmlnWjVHL0JJaERVeS9TWWF2Z3JGXG5lV2x0Ykw2NmpOS3ZQOU5JbXVCNUs1THhpSDJ4N2cwZVRkZDFWVDIwdThsa1E0Z08yZzlRcjhRckFvR0FjcG0yXG5Qb2wwNTlabXhQZThITUxuYnFxQWo3cnVhTHhMTTRmVHp6MnFoekZBMlpNSmMwdTYxbEJ1dFV5c3ZHRVVLM2xYXG5wbDEzWE5jcWlJQmtZZlhCbmZvWVF6WS85amFjby9wejlOdTc1L3krdG5wYy8zKzNaOFJJTUlqR05nOWxTZ1dmXG5SL2UveFQydXlhbmttT2dBVVpzYkVlQ0N4RnJ2czduUjk2QitXTDhDZ1lBWEU2aE42RkxJVUttNGRxSmM4U3pMXG5oekVXOUFwTGFVRDZrYTR6U3dYODhFOXY0UVlucWlBRzdleEVCUmE3WHVPcmFCVk1ZTnVwOHByckpKbXBibHF1XG52clFZb29vczFmYVE5eGR3VnZzSkxXTkd1dDBkVXk1U29iRW9zM002UllTYkNhT0pXSGgvQ3JvSmUwMG51OFduXG5xNmVhbmVjNndnWkM2U1h0SFpNZGl3PT1cbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJoYW51LWRyaXZlQGFudGlncmF2aXR5LWF1dG9tYXRpb24tNDkwNTExLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAiY2xpZW50X2lkIjogIjEwOTU5MTczNTk1NTc3NDA4ODM3NCIsCiAgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwKICAidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwKICAiYXV0aF9wcm92aWRlcl94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL29hdXRoMi92MS9jZXJ0cyIsCiAgImNsaWVudF94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL3JvYm90L3YxL21ldGFkYXRhL3g1MDkvaGFudS1kcml2ZSU0MGFudGlncmF2aXR5LWF1dG9tYXRpb24tNDkwNTExLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAidW5pdmVyc2VfZG9tYWluIjogImdvb2dsZWFwaXMuY29tIgp9Cg=="
+        b64Key := "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiYW50aWdyYXZpdHktYXV0b21hdGlvbi00OTA1MTEiLAogICJwcml2YXRlX2tleV9pZCI6ICI5MWEwN2Q5OGM1NjBmM2IxNTJhMGNkZmEzNmUxMTkyOTBhNjg2MDBlIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdkFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLWXdnZ1NpQWdFQUFvSUJBUUNXYW5RVlNKVHZlVUMwXG5HUkJSbGtVd0ZNZDVWeU5WT2J5VEF0a3J4UzUrNVVDREd0djVPSWdnTHU5T20vaFJndC80RlJsbzVSNXlzNXdiXG41VUV1TVZ6MkRBZk5tYTZFYWVFaDFKbTRXaGIxME9BdTZEYUFIalkwVDJTSG5OOEptZ05xbEFONyt0QjRCMkM3XG4vYVNUc0daRTJEOGxuWGwwMnNHVXNBcDVQQUpIdDdPZ0RSU0lmaGdURFFTS2VhbUx5bmhnaXZ4Z0RzT2EzOE1yXG5NY3pJTDhVelQ3NVI2NGNEV0w3VVQ0QlRTamdRT2MxM3FTWlJMMzVHMktFYlhNMEx1dlVhTW1HQ0ZaY2pmR2ZMXG41QlBJTU10Qlk3WHpBRnFRRDZaUFlwSmZWaCtMQVVJQjlyanVwTXZmVk1oUjdKU2UzcG5wM1ZiWmdUYVhVaU5aXG4vN2l1YXRHWkFnTUJBQUVDZ2dFQUFLcENESjRtZkdGcE9JWFBJSWNHbGg1NlZxb2pBWDBGdG1MU0JLMmdNK29DXG56eGZ2Y2N4ekVMd2FUVnB6K0E0a29jZTlQT05GWU54ZHRPZ0lCdC9vc2QzSEh1a2dwQ3ZJVTNVVGIzS0xnRUZiXG4wNXZkR0t5T0l0OWRGYk1XSVIvdjYzR0EzM01ZTWJCa0k0TmtWK3FCbndWZWxhUGdTNFgzcVZucHhXYlQxS2VGXG5ydTZtWW5vdldsUTRKakJwaGtqRmF2b3ZISTNSNEVDZ2VpUm1NKzFUTEhpcm1tcUQxUFAwam51cW5veTVxcTRBXG5jWnh6NUJvNk5TSUNtZExhWVhQMFFPV21CS29ESEtkT2FibG9hMExZOU9rN0hDcitxRjdVeTB1L1ZOekZzcHJ1XG52aXJ1d0NiN2F0UkFSWENSTXFjUDVmdGxhQld6dkREVVNEZ2JmTFBBelFLQmdRREZaMWYraG9xWVIxWGZ6MHRyXG5BRE5hblcxQVNrZmhOcTNNS3ZaZENNMnlQNW1HWUo1Yi93MWRBMWExQytXcGVyVTBDU0hOaUxxWWZSdlBkbUtnXG45bHlDY051UjVDRENvaldFQ01DbXRTbnVpZzdyTVgrYTJKSUY1KzBjUWhKWlUyMEt0VW5ROGI1UkFDUXY4ZGkrXG5RWHpNWUsxYTRpMXZEV1l1MkcvcFk0VCtvd0tCZ1FEREVJUEJRbmIweXNlMm85L1NyTTN3SmhSU0JFR1U5VjQ3XG5sSk83R2UrQTJLVlYyd29QMkducWk4ZFBiZk8wNkNkL2EvQWU0blVaN1dSMGV2dVJURUN0bGZkTWVMekFDUSszXG5FYy9SWnlYL0NKb0NKZWg5SXNKcjlpK2Yxbk1qQU9TdEV6NWxoVzhGcXZZczRsZGUrQ0VZWkFlUFFuV1kxYkdnXG53a3BHN3N5ZWt3S0JnQ01abGc3ZTAyUHlReld4Z1VKOFhhVStHci8wdFVVNVdMdlY0OHAxRjBZYmd1dmU0Q21SXG5kMG5UbnlaQUFFMGJVWDc0SkxlTUdVbWw3VHo5V3RvdUZCTHBpRkV2bEJlbmlnWjVHL0JJaERVeS9TWWF2Z3JGXG5lV2x0Ykw2NmpOS3ZQOU5JbXVCNUs1THhpSDJ4N2cwZVRkZDFWVDIwdThsa1E0Z08yZzlRcjhRckFvR0FjcG0yXG5Qb2wwNTlabXhQZThITUxuYnFxQWo3cnVhTHhMTTRmVHp6MnFoekZBMlpNSmMwdTYxbEJ1dFV5c3ZHRVVLM2xYXG5wbDEzWE5jcWlJQmtZZlhCbmZvWVF6WS85amFjby9wejlOdTc1L3krdG5wYy8zKzNaOFJJTUlqR05nOWxTZ1dmXG5SL2UveFQydXlhbmttT2dBVVpzYkVlQ0N4RnJ2czduUjk2QitXTDhDZ1lBWEU2aE42RkxJVUttNGRxSmM4U3pMXG5oekVXOUFwTGFVRDZrYTR6U3dYODhFOXY0UVlucWlBRzdleEVCUmE3WHVPcmFCVk1ZTnVwOHByckpKbXBibHF1XG52clFZb29vczFmYVE5eGR3VnZzSkxXTkd1dDBkVXk1U29iRW9zM002UllTYkNhT0pXSGgvQ3JvSmUwMG51OFduXG5xNmVhbmVjNndnWkM2U1h0SFpNZGl3PT1cbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJoYW51LWRyaXZlQGFudGlncmF2aXR5LWF1dG9tYXRpb24tNDkwNTExLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAiY2xpZW50X2lkIjogIjEwOTU5MTczNTk1NTc3NDA4ODM3NCIsCiAgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwKICAidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwKICAiYXV0aF9wcm92aWRlcl94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL29hdXRoMi92MS9jZXJ0cyIsCiAgImNsaWVudF94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL3JvYm90L3YxL21ldGFkYXRhL3g1MDkvaGFudS1kcml2ZSU0MGFudGlncmF2aXR5LWF1dG9tYXRpb24tNDkwNTExLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAidW5pdmVyc2VfZG9tYWluIjogImdvb2dsZWFwaXMuY29tIgp9Cg=="
         
         ; Extract base64 to file using PowerShell
         decodePsPath := A_Temp . "\decode_key.ps1"
@@ -110,49 +149,11 @@ if FileExist(rcloneExe) && FileExist(saKeyFile) && (!DirExist(hanuMaterialsDir) 
 }
 
 ; ==============================================================================
-; 2. Auto-install Git
-; ==============================================================================
-gitExePath := "C:\Program Files\Git\cmd\git.exe"
-
-if !FileExist(gitExePath) {
-    gitPsScript := "
-    (
-    Write-Host 'Fetching latest Git installer URL from GitHub...'
-    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/git-for-windows/git/releases/latest"
-    $asset = $release.assets | Where-Object { $_.name -match "64-bit\.exe`$" -and $_.name -notmatch "Portable" -and $_.name -notmatch "MinGit" -and $_.name -notmatch "pdbs" }
-    $downloadUrl = $asset[0].browser_download_url
-    
-    $installer = Join-Path $env:TEMP 'git_installer.exe'
-    Write-Host "Downloading Git from: $downloadUrl"
-    
-    Start-Process -FilePath 'bitsadmin.exe' -ArgumentList "/transfer ""GitDownload"" /priority foreground ""$downloadUrl"" ""$installer""" -Wait
-    
-    Write-Host 'Installing Git silently...'
-    Start-Process -FilePath $installer -ArgumentList '/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS' -Wait
-    
-    Write-Host 'Configuring Git...'
-    $gitCmd = 'C:\Program Files\Git\cmd\git.exe'
-    if (Test-Path $gitCmd) {
-        & $gitCmd config --global user.name 'Hoang'
-        & $gitCmd config --global user.email 'Hoang'
-    }
-    )"
-    
-    gitPsPath := A_Temp . "\install_git_startup.ps1"
-    if FileExist(gitPsPath)
-        FileDelete(gitPsPath)
-    FileAppend(gitPsScript, gitPsPath)
-    
-    ; Run Git installation visibly so the user can see the progress
-    RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . gitPsPath . "`"")
-}
-
-; ==============================================================================
-; 3. Auto-install Antigravity (GitHub Download + wizard automation)
+; 4. Auto-install Antigravity (GitHub Download + wizard automation)
 ; ==============================================================================
 antigravityExe := EnvGet("USERPROFILE") . "\AppData\Local\Programs\antigravity\Antigravity.exe"
 antigravityInstaller := A_Temp . "\antigravity_setup.exe"
-repoUrl := "hoanglaking/Antigravity" ; GitHub repository
+repoUrl := "hoanglaking/Antigravity"
 
 ; ALWAYS FRESH START: Kill existing process and delete old installer
 try {
@@ -161,25 +162,19 @@ try {
 if FileExist(antigravityInstaller)
     FileDelete(antigravityInstaller)
 
-; Download from GitHub
-antigravityPsScript := "
-(
-Write-Host 'Fetching latest Antigravity installer URL from GitHub...'
-$repo = '" . repoUrl . "'
-$release = Invoke-RestMethod -Uri `"https://api.github.com/repos/$repo/releases/latest`"
-$asset = $release.assets | Where-Object { $_.name -match 'Setup\.exe$' }
-$downloadUrl = $asset[0].browser_download_url
-
-$installer = '" . antigravityInstaller . "'
-Write-Host `"Downloading Antigravity from: $downloadUrl`"
-
-Start-Process -FilePath 'bitsadmin.exe' -ArgumentList `"/transfer `"AntigravityDownload`" /priority foreground `"$downloadUrl`" `"$installer`"`" -Wait
-)"
+; Download from GitHub (fixed: using line-by-line concatenation instead of continuation section)
+agPsScript := "Write-Host 'Fetching latest Antigravity installer URL from GitHub...'`n"
+agPsScript .= "$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/" . repoUrl . "/releases/latest'`n"
+agPsScript .= "$asset = $release.assets | Where-Object { $_.name -match 'Setup\.exe$' }`n"
+agPsScript .= "$downloadUrl = $asset[0].browser_download_url`n"
+agPsScript .= "$installer = '" . antigravityInstaller . "'`n"
+agPsScript .= "Write-Host `"Downloading Antigravity from: $downloadUrl`"`n"
+agPsScript .= "Invoke-WebRequest -Uri $downloadUrl -OutFile $installer -UseBasicParsing`n"
 
 antigravityPsPath := A_Temp . "\download_antigravity.ps1"
 if FileExist(antigravityPsPath)
     FileDelete(antigravityPsPath)
-FileAppend(antigravityPsScript, antigravityPsPath)
+FileAppend(agPsScript, antigravityPsPath)
 
 RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . antigravityPsPath . "`"")
 
@@ -353,4 +348,3 @@ LWin & q::{
     ; Attempt 2: Command line fallback if the direct API call is blocked
     Run("shutdown.exe /r /t 0 /f",, "Hide")
 }
-
