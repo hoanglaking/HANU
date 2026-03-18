@@ -17,7 +17,7 @@ hanuMaterialsDir := EnvGet("USERPROFILE") . "\Downloads\HANU Materials"
 rcloneDir := A_ScriptDir . "\File"
 rcloneExe := rcloneDir . "\rclone.exe"
 saKeyFile := rcloneDir . "\antigravity-automation-490511-9b00c9bd8cf5.json"
-gistUrl := "https://gist.githubusercontent.com/hoanglaking/0353ad65fe8e67908b4094eae1f17897/raw/60675c94bab0f530835bc9d9e4e5dd36ff4cf53f/key.json"
+gistUrl := "https://gist.githubusercontent.com/hoanglaking/0353ad65fe8e67908b4094eae1f17897/raw/60675c94bab0f530835bc9d9e4e5dd36ff4cf53f/key.json" ; REMOVED: Using inline base64 instead
 
 ; Ensure File directory exists
 if !DirExist(rcloneDir) {
@@ -29,16 +29,25 @@ needsRclone := !FileExist(rcloneExe)
 needsKey := !FileExist(saKeyFile)
 
 if (needsRclone || needsKey) {
-    psScript := "
-    (
-        Write-Host 'Downloading HANU Dependencies...'
+    ; --- Handle JSON Key (Base64 Decode) ---
+    if (needsKey) {
+        b64Key := "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiYW50aWdyYXZpdHktYXV0b21hdGlvbi00OTA1MTEiLAogICJwcml2YXRlX2tleV9pZCI6ICI5YjAwYzliZDhjZjVhMTUyYjdlZGNkNDhlNmMxZmEyYTBjNWM2ZjkxIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdmdJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLZ3dnZ1NrQWdFQUFvSUJBUURLU3h1MmhjNW5mVDA5XG5yN1p5ajZFcVVvaGVMMU9WZGVjVEFoNERFMy9oK005eWV3QWlaNTdKNWV3RnpJUC96NUJjNkFDT0RyR1FvbVhsXG5UTW80MUtsUmVzN3RKRjhGdXViVkRHS2JOcHN6Tk1JK3BuMUxoOC9uenpZc3pFV3dsY25ja01CQTJMWFZHdlBDXG5xUHNzRnp6VGFYNktHSkRlcmg2SlAzUlJuV0lqZmhLK1pGYlVYWlFNTVJ4OEJVM2tndFg1Nm1sNG9TZEtSQlJKXG5xTG5RS08wcnhCNTVyUTd4OFRxaGgwTkIvOE9zbnRyVzF2dWVrMldvWXZ2VHo5YWgxMVUrQ2RPSkJqa2xwcDlhXG5zSHdmVk1JWFJuNXpnVHNlT1NORm1zaG1McXhVS1RzeDg3RlRDcjh0RVc1ZHhJZFNlT0NtR2lJWWxMZnhEc0dJXG4yQVJ2UUk1ekFnTUJBQUVDZ2dFQURnbzFjNjhJdXNVRjdaU1c2SStRWTNRVDg5bDhCeGtHUHhyOEEwR2t0QVhGXG5QQkJPVzVUdWY5dTl6RTg3OEJLelZjZGlWbm10bURpMU1ydG9JNWFhNDhWT3ZFVzBkSnphclhtdEZGR3ZadGZvXG5EVm9Yd3hpN2RMNjhaMUtNR2F2anRUTzByQ3QrUHpxZUpXbjkrTHJxSlZBaWtLb1F6K3Vzd2VET0RXWUxiQ1FSXG54NzZMTUg5MTZkZHAwRTIwNFpJdmh3NUhxcG5kaWRDVG5OMUUyczJ0bmZvanpUd0pTb0gwRjVPMis1bFV1N0ZBXG5KLzJyMFoxQlEyY21VdmwxNlVxdVNhWWxzTEc3TG03Wkd2SzgrSmg2OVBzMVFMc201NGVBOTd2QmhzSGhFWFN0XG5peXdPNUlYSGJhTzNvdTlrQndFaE1Mc0JYQ0o4NXpUQ3RZVTBnSDVnU1FLQmdRRG9GSmtDZHM5ZHd2ZjBHd0NNXG4yV0xBK1dDTGZUbGFtbEdQc2svdW1kU0xkRTVSYndEUHVha2w4MXFQMmJUN0RCaTRkNGRQOHcyY3Mrc1llZ2RvXG55TW9vOHIyZzRPNXRrL0hTbXhvRm1GRWd1YTFEYXdiOTZUV3FDOTR4VlBnSkFxMjZIaTJjdEFyVHJOZndOeG50XG4xQ3RkS005akhBUlBrZThpNkg1ZzBmQmF1d0tCZ1FEZkpKVi8wQ05IMjNSVWI1RC95RmUySnlHQjJzbkFSRlJCXG5seWdSczZQcHZnQ3BiQXpoMkZXcTF2MTZBb3RTSDVVSGlrcmVnVWRSaXc1MVpYSUt6aEk3NU5iaThSRSt6RVF0XG5RWDcvY1lSZmhIcjNOMlRtaGF2WG1QdGJ2clY2M0ZFbTNYdlhMemFoQzBNRVlDOTB2emN2empjRGxqa3JBMUZnXG53WjRwVzdIcnFRS0JnSDBlUGE5NlppbGlaMU1QQzZqanViM1h0QmovbGVBbXVqb0NJOTI2eVQrMW9GTit5SzAwXG5wdUJ5NWl3UGJ1YTVpc3BJaG9hdnZuTHcvSm5oa0FVSjJ4TmdhcU5GSU1XcXNRQ2Q1ZFdHWEphTUE4RUkvbWY5XG5ScFU2ZUx1WDEzRGtKTXptWUNqUFY5YnVwQ3c1U0oxVGVWMXNGd0tUcEM5UnVkN1VBTzRwd0s3cEFvR0JBSVlMXG5pd2M1dUVmdFMrZUJFY0NsMEJMclZOU1Y0c1p1QlpOVlEwdkc5enR0MlNYdGM1dWtBbXBiTmUrNllZa1cwY2F5XG55NkQ0VmloaytXMktZRVNmWUJLOHVGMmg1UE10Yi9NanVpK25PSmJNbGJXMmdCVit6U2o1akYyanBZOUZsRFpkXG5ySXdxbjQyRW4yQ2NpMFY5cktBNko1QXZDTzZPMHE3bUFLWGxvRzdwQW9HQkFNMEVWelZQSVRPR1pQeG14cXJ2XG5WVSt5N1h0VzlqcUttV1IreXlObFAwbVFvWVZjS3czVlkyOEk5d2lNYmZhcDFzTEdnNXJKVEVtOHRya0ZxUnBTXG4wbG9MOG1rOGpIM1ZBbE5hOUpUTjYrK3Z0RVBWM20ySW1IRXBPMEFNbXFtcjg3N1ZxdkZzcFhhWTB1TWhUMVhYXG5VbWVSQkZNa2F5ZzdvZkdWd1kvM3pEZUVcbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJoYW51LWRyaXZlQGFudGlncmF2aXR5LWF1dG9tYXRpb24tNDkwNTExLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAiY2xpZW50X2lkIjogIjEwOTU5MTczNTk1NTc3NDA4ODM3NCIsCiAgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwKICAidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwKICAiYXV0aF9wcm92aWRlcl94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL29hdXRoMi92MS9jZXJ0cyIsCiAgImNsaWVudF94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL3JvYm90L3YxL21ldGFkYXRhL3g1MDkvaGFudS1kcml2ZSU0MGFudGlncmF2aXR5LWF1dG9tYXRpb24tNDkwNTExLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAidW5pdmVyc2VfZG9tYWluIjogImdvb2dsZWFwaXMuY29tIgp9Cg=="
         
-        if (" . (needsKey ? "$true" : "$false") . ") {
-            Write-Host 'Downloading Service Account Key...'
-            Invoke-WebRequest -Uri '" . gistUrl . "' -OutFile '" . saKeyFile . "' -UseBasicParsing
-        }
-        
-        if (" . (needsRclone ? "$true" : "$false") . ") {
+        ; Extract base64 to file using PowerShell
+        decodePsPath := A_Temp . "\decode_key.ps1"
+        decodePsScript := "[IO.File]::WriteAllBytes('" . saKeyFile . "', [Convert]::FromBase64String('" . b64Key . "'))"
+        if FileExist(decodePsPath)
+            FileDelete(decodePsPath)
+        FileAppend(decodePsScript, decodePsPath)
+        RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . decodePsPath . "`"",, "Hide")
+    }
+
+    ; --- Handle Rclone Download ---
+    if (needsRclone) {
+        psScript := "
+        (
+            Write-Host 'Downloading HANU Dependencies...'
+            
             Write-Host 'Downloading Rclone Explorer...'
             `$release = Invoke-RestMethod -Uri 'https://api.github.com/repos/rclone/rclone/releases/latest'
             `$asset = `$release.assets | Where-Object { `$_.name -match 'windows-amd64.zip$' }
@@ -57,16 +66,16 @@ if (needsRclone || needsKey) {
             
             Remove-Item `$zipPath -Force
             Remove-Item `$extDir -Recurse -Force
-        }
-    )"
-    
-    psPath := A_Temp . "\download_hanu_deps.ps1"
-    if FileExist(psPath)
-        FileDelete(psPath)
-    FileAppend(psScript, psPath)
-    
-    ; Run the download visually so the user can see progress (just like Git installer)
-    RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . psPath . "`"")
+        )"
+        
+        psPath := A_Temp . "\download_hanu_deps.ps1"
+        if FileExist(psPath)
+            FileDelete(psPath)
+        FileAppend(psScript, psPath)
+        
+        ; Run the download visually so the user can see progress (just like Git installer)
+        RunWait("powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"" . psPath . "`"")
+    }
 }
 
 ; Proceed with sync if we have everything
